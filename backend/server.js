@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import Brevo from "@getbrevo/brevo";
+import { TransactionalEmailsApi, ApiClient } from "@getbrevo/brevo";
 
 dotenv.config();
 
@@ -12,11 +12,10 @@ app.use(cors());
 app.use(express.json());
 
 /* ===== BREVO CONFIG ===== */
-const brevo = new Brevo.TransactionalEmailsApi();
-brevo.setApiKey(
-  Brevo.TransactionalEmailsApiApiKeys.apiKey,
-  process.env.BREVO_API_KEY
-);
+const client = ApiClient.instance;
+client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+
+const brevo = new TransactionalEmailsApi();
 
 /* ===== ROUTES ===== */
 app.post("/send", async (req, res) => {
@@ -29,8 +28,8 @@ app.post("/send", async (req, res) => {
 
     await brevo.sendTransacEmail({
       sender: {
-        name: "System tankowania",
         email: process.env.MAIL_FROM,
+        name: "System tankowania",
       },
       to: [
         {
