@@ -1,7 +1,7 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { TransactionalEmailsApi, ApiClient } from "@getbrevo/brevo";
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const brevo = require("@getbrevo/brevo");
 
 dotenv.config();
 
@@ -12,10 +12,10 @@ app.use(cors());
 app.use(express.json());
 
 /* ===== BREVO CONFIG ===== */
-const client = ApiClient.instance;
-client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+const apiInstance = new brevo.TransactionalEmailsApi();
 
-const brevo = new TransactionalEmailsApi();
+const apiKey = apiInstance.authentications["apiKey"];
+apiKey.apiKey = process.env.BREVO_API_KEY;
 
 /* ===== ROUTES ===== */
 app.post("/send", async (req, res) => {
@@ -26,16 +26,12 @@ app.post("/send", async (req, res) => {
       return res.status(400).json({ error: "Brak wymaganych danych" });
     }
 
-    await brevo.sendTransacEmail({
+    const email = new brevo.SendSmtpEmail({
       sender: {
         email: process.env.MAIL_FROM,
         name: "System tankowania",
       },
-      to: [
-        {
-          email: process.env.MAIL_TO,
-        },
-      ],
+      to: [{ email: process.env.MAIL_TO }],
       subject: "Nowe tankowanie autobusu",
       htmlContent: `
         <h2>🚌 Nowe tankowanie</h2>
@@ -49,6 +45,8 @@ app.post("/send", async (req, res) => {
         </ul>
       `,
     });
+
+    await apiInstance.sendTransacEmail(email);
 
     res.json({ success: true });
   } catch (err) {
