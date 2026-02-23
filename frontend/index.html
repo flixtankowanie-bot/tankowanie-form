@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tankowanie</title>
+
+  <style>
+    body {
+      font-family: system-ui, Arial;
+      background: #0b1220;
+      color: #e8eefc;
+      margin: 0;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 24px auto;
+      padding: 0 14px;
+    }
+    .card {
+      background: #111a2e;
+      border: 1px solid #1b2a4a;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    label { display: block; margin-top: 12px; }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 10px;
+      border: 1px solid #24355e;
+      background: #0b1220;
+      color: #e8eefc;
+    }
+    button {
+      margin-top: 16px;
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 0;
+      font-weight: 800;
+      cursor: pointer;
+      background: #4f76ff;
+      color: #071022;
+    }
+    .msg {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #24355e;
+      background: #0b1220;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Tankowanie</h1>
+
+    <!-- NR REJ -->
+    <label>Nr rejestracyjny</label>
+    <select id="regNo" required>
+      <option value="">— wybierz —</option>
+      <option value="WGM2463M">WGM2463M</option>
+      <option value="WZ248JY">WZ248JY</option>
+      <option value="WZ249JY">WZ249JY</option>
+      <option value="WGM1131J">WGM1131J</option>
+      <option value="inny">Inny</option>
+    </select>
+
+    <div id="regNoOtherWrap" style="display:none;">
+      <label>Inny nr rejestracyjny</label>
+      <input id="regNoOther" placeholder="Wpisz nr rejestracyjny" />
+    </div>
+
+    <!-- PRZEBIEG -->
+    <label>Przebieg (km)</label>
+    <input id="odometerKm" inputmode="numeric" required />
+
+    <!-- PALIWO -->
+    <label>Paliwo (litry)</label>
+    <input id="dieselLiters" inputmode="decimal" required />
+
+    <!-- ADBLUE -->
+    <label>AdBlue (litry)</label>
+    <input id="adblueLiters" inputmode="decimal" value="0" />
+
+    <!-- STACJA -->
+    <label>Stacja</label>
+    <select id="station" required>
+      <option value="">— wybierz —</option>
+      <option value="Eurowag Świecko">Eurowag Świecko</option>
+      <option value="Moya Słubice">Moya Słubice</option>
+      <option value="Moya Świecko">Moya Świecko</option>
+      <option value="tankpool24 Duren">tankpool24 Duren</option>
+      <option value="inna">Inna</option>
+    </select>
+
+    <div id="stationOtherWrap" style="display:none;">
+      <label>Nazwa stacji</label>
+      <input id="stationOther" placeholder="Wpisz nazwę stacji" />
+    </div>
+
+    <!-- KIEROWCA -->
+    <label>Kierowca</label>
+    <input id="driverName" placeholder="Imię i nazwisko" required/>
+
+    <button id="sendBtn">Wyślij e-mail</button>
+
+    <div id="msg" class="msg" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+  const API = "http://127.0.0.1:8080/send";
+  const $ = id => document.getElementById(id);
+
+  // --- obsługa "Inny nr rej"
+  $("regNo").addEventListener("change", () => {
+    if ($("regNo").value === "inny") {
+      $("regNoOtherWrap").style.display = "block";
+    } else {
+      $("regNoOtherWrap").style.display = "none";
+      $("regNoOther").value = "";
+    }
+  });
+
+  // --- obsługa "Inna stacja"
+  $("station").addEventListener("change", () => {
+    if ($("station").value === "inna") {
+      $("stationOtherWrap").style.display = "block";
+    } else {
+      $("stationOtherWrap").style.display = "none";
+      $("stationOther").value = "";
+    }
+  });
+
+  $("sendBtn").addEventListener("click", async () => {
+    $("msg").style.display = "none";
+
+    const payload = {
+      regNo: $("regNo").value,
+      regNoOther: $("regNoOther").value.trim(),
+      odometerKm: $("odometerKm").value.trim(),
+      dieselLiters: $("dieselLiters").value.trim(),
+      adblueLiters: $("adblueLiters").value.trim(),
+      station: $("station").value,
+      stationOther: $("stationOther").value.trim(),
+      driverName: $("driverName").value.trim()
+    };
+
+    try {
+      const r = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error);
+
+      $("msg").textContent = "Wysłano ✅";
+      $("msg").style.display = "block";
+      $("dieselLiters").value = "";
+      $("adblueLiters").value = "0";
+    } catch (e) {
+      $("msg").textContent = "Błąd: " + e.message;
+      $("msg").style.display = "block";
+    }
+  });
+</script>
+</body>
+</html>
